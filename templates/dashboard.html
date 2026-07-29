@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoltaicChat - Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0d0e12;
+            --card-bg: #16181f;
+            --border-color: #262933;
+            --accent-purple: #8b5cf6;
+            --accent-blue: #3b82f6;
+            --text-main: #f3f4f6;
+            --text-sub: #9ca3af;
+            --success-color: #10b981;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-back {
+            color: var(--text-sub);
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            transition: all 0.2s;
+        }
+
+        .btn-back:hover {
+            background: var(--border-color);
+            color: #fff;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-header {
+            font-size: 0.85rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-sub);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        textarea, select, input[type="text"], input[type="password"] {
+            width: 100%;
+            background-color: #0b0c0f;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-main);
+            padding: 10px;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            outline: none;
+            margin-bottom: 10px;
+        }
+
+        textarea:focus, select:focus, input:focus {
+            border-color: var(--accent-purple);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 90px;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 10px;
+            width: fit-content;
+            transition: opacity 0.2s;
+        }
+
+        .btn-save:hover {
+            opacity: 0.9;
+        }
+
+        .status-tag {
+            font-size: 0.75rem;
+            color: var(--success-color);
+            margin-top: 8px;
+            display: none;
+        }
+
+        .range-container {
+            margin-top: 10px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-purple);
+        }
+
+        .stats-container {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 15px;
+        }
+
+        .stat-box h2 {
+            margin: 0;
+            font-size: 2rem;
+            color: var(--accent-blue);
+        }
+
+        .stat-box span {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>⬡ Dashboard</h1>
+        <a href="/" class="btn-back">← Volver al Chat</a>
+    </header>
+
+    <div class="dashboard-grid">
+        
+        <!-- TARJETA 1: REGLAS DEL SISTEMA -->
+        <div class="card">
+            <div>
+                <div class="card-header">📋 Reglas del Sistema</div>
+                <label>Instrucciones que el modelo debe seguir</label>
+                <textarea id="systemPrompt" placeholder="Escribe aquí las reglas del sistema..."></textarea>
+            </div>
+            <div>
+                <button class="btn-save" onclick="saveData('prompt')">💾 Guardar Reglas</button>
+                <div class="status-tag" id="status-prompt">✓ Listo</div>
+            </div>
+        </div>
+
+        <!-- TARJETA 2: CONFIGURACIÓN DE VOZ -->
+        <div class="card">
+            <div>
+                <div class="card-header">🔊 Configuración de Voz</div>
+                <label>Voz activa</label>
+                <select id="voiceId">
+                    <option value="es-ES-ElviraNeural">Elvira (Femenina)</option>
+                    <option value="es-ES-AlvaroNeural">Álvaro (Masculino)</option>
+                    <option value="es-MX-DaliaNeural">Dalia (Femenina - MX)</option>
+                    <option value="es-CL-LorenzoNeural">Lorenzo (Masculino - CL)</option>
+                </select>
+            </div>
+            <div>
+                <button class="btn-save" onclick="saveData('voice')">💾 Guardar Voz</button>
+                <div class="status-tag" id="status-voice">✓ Listo</div>
+            </div>
+        </div>
+
+        <!-- TARJETA 3: MODELO Y TEMPERATURA -->
+        <div class="card">
+            <div>
+                <div class="card-header">⚙️ Modelo y Temperatura</div>
+                <label>Modelo activo</label>
+                <select id="modelSelect">
+                    <optgroup label="DeepSeek">
+                        <option value="deepseek-chat">DeepSeek-V3 (Potente)</option>
+                        <option value="deepseek-reasoner">DeepSeek-R1 (Razonamiento)</option>
+                    </optgroup>
+                    <optgroup label="Google Gemini">
+                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Ultrarrápido)</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Razonamiento Avanzado)</option>
+                    </optgroup>
+                </select>
+
+                <div class="range-container">
+                    <label>Temperatura: <span id="tempValue">0.7</span></label>
+                    <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7" oninput="document.getElementById('tempValue').innerText = this.value">
+                </div>
+            </div>
+            <div>
+                <button class="btn-save" onclick="saveData('model')">💾 Guardar Modelo</button>
+                <div class="status-tag" id="status-model">✓ Listo</div>
+            </div>
+        </div>
+
+        <!-- TARJETA 4: CLAVES DE API (NUEVA) -->
+        <div class="card">
+            <div>
+                <div class="card-header">🔑 Claves de API / Proveedores</div>
+                
+                <label>Google Gemini API Key</label>
+                <input type="password" id="geminiApiKey" placeholder="AIzaSy...">
+
+                <label>DeepSeek API Key</label>
+                <input type="password" id="deepseekApiKey" placeholder="sk-...">
+            </div>
+            <div>
+                <button class="btn-save" onclick="saveData('keys')">💾 Guardar Claves</button>
+                <div class="status-tag" id="status-keys">✓ Listo</div>
+            </div>
+        </div>
+
+        <!-- TARJETA 5: ESTADÍSTICAS -->
+        <div class="card">
+            <div>
+                <div class="card-header">📊 Estadísticas</div>
+                <div class="stats-container">
+                    <div class="stat-box">
+                        <h2 id="msgCount">0</h2>
+                        <span>Mensajes</span>
+                    </div>
+                    <div class="stat-box">
+                        <h2 id="tokenCount">0</h2>
+                        <span>Tokens</span>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <button class="btn-save" style="background: #2563eb;" onclick="loadConfig()">🔄 Actualizar</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Cargar configuración desde la API
+        async function loadConfig() {
+            try {
+                const res = await fetch('/api/config');
+                const data = await res.json();
+
+                if (data.system_prompt) document.getElementById('systemPrompt').value = data.system_prompt;
+                if (data.voice_id) document.getElementById('voiceId').value = data.voice_id;
+                if (data.model) document.getElementById('modelSelect').value = data.model;
+                if (data.gemini_api_key) document.getElementById('geminiApiKey').value = data.gemini_api_key;
+                if (data.deepseek_api_key) document.getElementById('deepseekApiKey').value = data.deepseek_api_key;
+                if (data.temperature !== undefined) {
+                    document.getElementById('temperature').value = data.temperature;
+                    document.getElementById('tempValue').innerText = data.temperature;
+                }
+            } catch (err) {
+                console.error("Error al cargar la configuración:", err);
+            }
+        }
+
+        // Guardar cambios
+        async function saveData(section) {
+            const payload = {
+                system_prompt: document.getElementById('systemPrompt').value,
+                voice_id: document.getElementById('voiceId').value,
+                model: document.getElementById('modelSelect').value,
+                temperature: parseFloat(document.getElementById('temperature').value),
+                gemini_api_key: document.getElementById('geminiApiKey').value,
+                deepseek_api_key: document.getElementById('deepseekApiKey').value
+            };
+
+            try {
+                const res = await fetch('/api/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (res.ok) {
+                    const statusTag = document.getElementById(`status-${section}`);
+                    if (statusTag) {
+                        statusTag.style.display = 'block';
+                        setTimeout(() => statusTag.style.display = 'none', 2500);
+                    }
+                }
+            } catch (err) {
+                alert("Error al conectar con el servidor.");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadConfig);
+    </script>
+</body>
+</html>

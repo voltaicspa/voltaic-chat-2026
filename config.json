@@ -1,0 +1,6 @@
+{
+  "system_prompt": "Responde siempre en español. Sé claro y directo. Si no sabes algo, dilo honestamente.",
+  "voice_id": "es-ES-ElviraNeural",
+  "temperature": 0.7,
+  "model": "deepseek-v4-pro"
+}

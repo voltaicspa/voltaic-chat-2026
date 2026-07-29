@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voltaic Chat</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { 
+    background: #0a0a0f; 
+    color: #fff; 
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+    display:flex; 
+    flex-direction:column;
+    height:100vh;
+    padding:20px;
+}
+.header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding-bottom:15px;
+    border-bottom:1px solid #1a1a2e;
+}
+.header h1 { 
+    font-size:22px; 
+    background:linear-gradient(135deg,#00d4ff,#7b2ffc); 
+    -webkit-background-clip:text; 
+    -webkit-text-fill-color:transparent; 
+}
+.header span { font-size:12px; color:#666; }
+.header a {
+    color:#666;
+    text-decoration:none;
+    padding:4px 14px;
+    border:1px solid #2a2a4a;
+    border-radius:100px;
+    font-size:11px;
+    transition:0.3s;
+}
+.header a:hover { background:#1a1a2e; color:#fff; }
+.tools {
+    display:flex;
+    gap:6px;
+    padding:8px 0;
+    flex-wrap:wrap;
+}
+.tools button {
+    background:#1a1a2e;
+    border:1px solid #2a2a4a;
+    border-radius:100px;
+    padding:4px 14px;
+    color:#888;
+    font-size:11px;
+    cursor:pointer;
+    transition:all 0.3s;
+}
+.tools button:hover { background:#2a2a4a; color:#fff; }
+.tools button.active { background:rgba(0,212,255,0.15); border-color:#00d4ff; color:#00d4ff; }
+.tools button.voz { background:rgba(123,47,252,0.15); border-color:#7b2ffc; color:#b388ff; }
+.tools button.voz.active { background:rgba(123,47,252,0.4); color:#fff; }
+.tools button.mic { background:rgba(255,0,128,0.15); border-color:#ff0080; color:#ff80bf; }
+.tools button.mic.active { background:rgba(255,0,128,0.4); animation: pulse 1.5s infinite; color:#fff; }
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 0, 128, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 0, 128, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 0, 128, 0); }
+}
+
+.chat {
+    flex:1;
+    overflow-y:auto;
+    padding:10px 0;
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+}
+.msg {
+    max-width:80%;
+    padding:8px 14px;
+    border-radius:10px;
+    font-size:14px;
+    line-height:1.5;
+}
+.msg.user {
+    align-self:flex-end;
+    background:linear-gradient(135deg,#00d4ff,#7b2ffc);
+    color:#fff;
+}
+.msg.assistant {
+    align-self:flex-start;
+    background:#1a1a2e;
+    border:1px solid #2a2a4a;
+}
+.msg.system {
+    align-self:center;
+    color:#666;
+    font-size:11px;
+    padding:4px 14px;
+    border-radius:100px;
+    background:#0a0a0f;
+}
+.input-area {
+    display:flex;
+    gap:8px;
+    padding-top:10px;
+    border-top:1px solid #1a1a2e;
+}
+.input-area input {
+    flex:1;
+    background:#1a1a2e;
+    border:1px solid #2a2a4a;
+    border-radius:8px;
+    padding:10px 14px;
+    color:#fff;
+    font-size:14px;
+    outline:none;
+}
+.input-area input:focus { border-color:#7b2ffc; }
+.input-area button {
+    background:linear-gradient(135deg,#00d4ff,#7b2ffc);
+    border:none;
+    border-radius:8px;
+    padding:0 24px;
+    color:#fff;
+    font-weight:600;
+    cursor:pointer;
+}
+.footer {
+    display:flex;
+    justify-content:space-between;
+    padding-top:8px;
+    font-size:10px;
+    color:#444;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>⬡ Voltaic Chat</h1>
+<div>
+<span id="modelo">V4-Pro</span>
+<a href="/dashboard">⚙️ Dashboard</a>
+</div>
+</div>
+
+<div class="tools">
+<button onclick="cambiarModelo('pro')" id="btnPro" class="active">⚡ Pro</button>
+<button onclick="cambiarModelo('flash')" id="btnFlash">⚡ Flash</button>
+<button onclick="exportar()">💾 Exportar</button>
+<button onclick="limpiar()">🧹 Limpiar</button>
+<button onclick="toggleEscuchar()" id="btnMic" class="mic">🎙️ Escuchar</button>
+<button onclick="toggleVoz()" id="btnVoz" class="voz">🔊 Hablar</button>
+</div>
+
+<div class="chat" id="chat">
+<div class="msg system">🤖 Bienvenido a Voltaic Chat</div>
+<div class="msg assistant">¡Hola! Usa 🎙️ <b>Escuchar</b> para hablarme por micrófono o 🔊 <b>Hablar</b> para que te responda con voz.</div>
+</div>
+
+<div class="input-area">
+<input id="input" placeholder="Escribe tu mensaje..." onkeydown="if(event.key=='Enter')enviar();">
+<button onclick="enviar()">Enviar</button>
+</div>
+
+<div class="footer">
+<span id="contador">💬 0</span>
+<span id="fecha"></span>
+<span id="statusVoz">🔊 Lectura: OFF | 🎙️ Mic: OFF</span>
+</div>
+
+<script>
+var modelo = 'deepseek-v4-pro';
+var count = 0;
+var isProcessing = false;
+var vozLecturaActiva = false;
+var escuchando = false;
+
+var synth = window.speechSynthesis;
+var recognition = null;
+
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = 'es-ES';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onresult = function(event) {
+        var transcript = event.results[0][0].transcript;
+        document.getElementById('input').value = transcript;
+        addMessage('system', '🎙️ Reconocido: "' + transcript + '"');
+        enviar();
+    };
+
+    recognition.onerror = function(event) {
+        console.error("Error micrófono:", event.error);
+        addMessage('system', '❌ Error de micrófono: ' + event.error);
+        detenerMic();
+    };
+
+    recognition.onend = function() {
+        detenerMic();
+    };
+}
+
+function toggleEscuchar() {
+    if (!recognition) {
+        alert('Tu navegador no admite micrófono. Usa Google Chrome o Microsoft Edge.');
+        return;
+    }
+    if (escuchando) {
+        recognition.stop();
+        detenerMic();
+    } else {
+        if (synth && synth.speaking) synth.cancel();
+        recognition.start();
+        escuchando = true;
+        document.getElementById('btnMic').className = 'mic active';
+        document.getElementById('btnMic').textContent = '🔴 Escuchando...';
+        updateStatus();
+    }
+}
+
+function detenerMic() {
+    escuchando = false;
+    document.getElementById('btnMic').className = 'mic';
+    document.getElementById('btnMic').textContent = '🎙️ Escuchar';
+    updateStatus();
+}
+
+function toggleVoz() {
+    vozLecturaActiva = !vozLecturaActiva;
+    document.getElementById('btnVoz').className = vozLecturaActiva ? 'voz active' : 'voz';
+    addMessage('system', '🔊 Lectura de voz ' + (vozLecturaActiva ? 'activada' : 'desactivada'));
+    if (!vozLecturaActiva && synth && synth.speaking) {
+        synth.cancel();
+    }
+    updateStatus();
+}
+
+function updateStatus() {
+    document.getElementById('statusVoz').textContent = 
+        '🔊 Lectura: ' + (vozLecturaActiva ? 'ON' : 'OFF') + ' | 🎙️ Mic: ' + (escuchando ? 'ON' : 'OFF');
+}
+
+function cambiarModelo(nuevo) {
+    var nombre = nuevo === 'pro' ? 'V4-Pro' : 'V4-Flash';
+    var api = nuevo === 'pro' ? 'deepseek-v4-pro' : 'deepseek-v4-flash';
+    modelo = api;
+    document.getElementById('modelo').textContent = nombre;
+    document.getElementById('btnPro').className = nuevo === 'pro' ? 'active' : '';
+    document.getElementById('btnFlash').className = nuevo === 'flash' ? 'active' : '';
+    addMessage('system', '🔄 Modelo: ' + nombre);
+}
+
+function enviar() {
+    if (isProcessing) return;
+    var input = document.getElementById('input');
+    var text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    isProcessing = true;
+    addMessage('user', text);
+    count++;
+    document.getElementById('contador').textContent = '💬 ' + count;
+
+    fetch('/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({message: text, model: modelo})
+    })
+    .then(r => r.json())
+    .then(data => {
+        isProcessing = false;
+        if (data.error) {
+            addMessage('system', '❌ ' + data.error);
+        } else {
+            addMessage('assistant', data.response);
+            count++;
+            document.getElementById('contador').textContent = '💬 ' + count;
+            
+            if (vozLecturaActiva) {
+                reproducirVozNativa(data.response);
+            }
+        }
+        scrollBottom();
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        isProcessing = false;
+        addMessage('system', '❌ Error de conexión');
+        scrollBottom();
+    });
+}
+
+function reproducirVozNativa(texto) {
+    if (!('speechSynthesis' in window)) return;
+    synth.cancel();
+
+    var utterance = new SpeechSynthesisUtterance(texto);
+    utterance.lang = 'es-ES';
+    utterance.rate = 1.0;
+
+    var voices = synth.getVoices();
+    var vozEspanol = voices.find(v => v.lang.startsWith('es'));
+    if (vozEspanol) utterance.voice = vozEspanol;
+
+    synth.speak(utterance);
+}
+
+function addMessage(role, content) {
+    var c = document.getElementById('chat');
+    var d = document.createElement('div');
+    d.className = 'msg ' + role;
+    d.innerHTML = content.replace(/\n/g, '<br>');
+    c.appendChild(d);
+    scrollBottom();
+}
+
+function scrollBottom() {
+    var c = document.getElementById('chat');
+    c.scrollTop = c.scrollHeight;
+}
+
+function limpiar() {
+    if (!confirm('¿Limpiar el chat?')) return;
+    if (synth && synth.speaking) synth.cancel();
+    document.getElementById('chat').innerHTML = '';
+    addMessage('system', '🧹 Chat limpiado');
+    count = 0;
+    document.getElementById('contador').textContent = '💬 0';
+}
+
+function exportar() {
+    window.open('/exportar', '_blank');
+}
+
+function updateFecha() {
+    var now = new Date();
+    document.getElementById('fecha').textContent = now.getDate()+'/'+(now.getMonth()+1)+' '+String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
+}
+
+updateFecha();
+setInterval(updateFecha, 60000);
+</script>
+
+</body>
+</html>
