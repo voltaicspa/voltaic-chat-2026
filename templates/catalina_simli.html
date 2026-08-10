@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Catalina — VoltaicTech</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0d14">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh; min-height: 100dvh;
+    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px;
+    background: radial-gradient(ellipse at top, #1a1d2e 0%, #0b0d14 60%);
+    color: #e8e9f0; text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 25px; font-weight: 600; letter-spacing: -.4px; }
+  .sub { font-size: 13px; color: #9297ad; max-width: 330px; line-height: 1.55; margin-top: 6px; }
+
+  /* Simli renderiza la cara en cuadrado. No forzamos otra proporcion: se
+     deformaria o quedaria con bandas feas. */
+  #escenario {
+    width: 100%; max-width: 340px; aspect-ratio: 1/1;
+    border-radius: 18px; overflow: hidden; position: relative;
+    background: #11131d; border: 1px solid #26293b;
+    display: grid; place-items: center;
+  }
+  #video { width: 100%; height: 100%; object-fit: cover; display: none; }
+  #reposo { font-size: 52px; opacity: .45; }
+
+  /* Borde que se enciende mientras habla. Sale del evento "speaking" del SDK
+     y ayuda a saber que esta viva cuando el sonido esta bajo. */
+  #escenario.hablando { border-color: #7b2ffc; box-shadow: 0 0 26px rgba(123,47,252,.45); }
+
+  #hud {
+    position: absolute; top: 10px; left: 10px; right: 10px;
+    display: none; justify-content: space-between;
+    font-size: 12px; font-variant-numeric: tabular-nums;
+  }
+  #hud span {
+    background: rgba(11,13,20,.78); backdrop-filter: blur(6px);
+    padding: 5px 10px; border-radius: 999px; border: 1px solid #2b2f45;
+  }
+  #reloj.alerta { color: #fca5a5; border-color: #7f1d1d; }
+
+  /* Lo que dice, escrito. Sirve para accesibilidad y para cuando alguien
+     tiene el sonido apagado. */
+  #dice {
+    display: none; font-size: 14px; line-height: 1.5; color: #cdd0dd;
+    max-width: 420px; min-height: 42px;
+    background: #12141e; border: 1px solid #23263a;
+    border-radius: 12px; padding: 11px 15px;
+  }
+
+  /* Anillo que late cuando te esta escuchando */
+  #escenario.oyendo { border-color: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.18); }
+  @keyframes latir { 0%,100% { opacity: .55 } 50% { opacity: 1 } }
+  #oyendo {
+    display: none; align-items: center; gap: 8px; justify-content: center;
+    font-size: 13px; color: #4ade80; margin-top: -4px;
+  }
+  #oyendo.visible { display: flex; }
+  #oyendo .punto {
+    width: 9px; height: 9px; border-radius: 50%; background: #22c55e;
+    animation: latir 1.1s ease-in-out infinite;
+  }
+  #parcial { color: #9297ad; font-style: italic; }
+
+  .fila { display: flex; gap: 10px; width: 100%; max-width: 420px; }
+
+  /* Interruptor de manos libres */
+  .manoslibres {
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    font-size: 13.5px; color: #9297ad; cursor: pointer; user-select: none;
+    padding: 4px;
+  }
+  .manoslibres input { width: 17px; height: 17px; accent-color: #22c55e; cursor: pointer; }
+  button {
+    flex: 1; padding: 14px 18px; font-size: 15px; font-weight: 600;
+    border: none; border-radius: 13px; cursor: pointer; color: #fff;
+    background: linear-gradient(145deg, #7b2ffc, #4c1d95);
+    transition: opacity .15s;
+  }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.colgar { background: linear-gradient(145deg, #dc2626, #7f1d1d); }
+
+  #decir {
+    flex: 2; padding: 13px 15px; font-size: 15px; border-radius: 13px;
+    background: #161822; border: 1px solid #2b2f45; color: #e8e9f0;
+  }
+  #decir::placeholder { color: #5a5d6e; }
+  #zonaDecir { display: none; }
+
+  #aviso {
+    display: none; font-size: 13px; max-width: 420px;
+    border-radius: 10px; padding: 11px 15px; line-height: 1.5;
+    color: #fca5a5; background: rgba(220,38,38,.1); border: 1px solid rgba(220,38,38,.3);
+  }
+  #tarifa { font-size: 11px; color: #4e5468; letter-spacing: .3px; }
+</style>
+</head>
+<body>
+
+  <div>
+    <h1>Catalina</h1>
+    <p class="sub">Pregúntale lo que quieras. Responde de cualquier tema — y
+    también sabe de licitaciones públicas y de Voltaic Radar.</p>
+  </div>
+
+  <div id="escenario">
+    <div id="reposo">💬</div>
+    <video id="video" autoplay playsinline></video>
+    <audio id="audio" autoplay></audio>
+    <div id="hud">
+      <span id="reloj">0:00</span>
+      <span id="costo">USD 0,00</span>
+    </div>
+  </div>
+
+  <div id="oyendo"><span class="punto"></span><span id="parcial">Te escucho…</span></div>
+  <div id="dice"></div>
+  <div id="aviso"></div>
+
+  <div class="fila"><button id="btn">Hablar con Catalina</button></div>
+
+  <label class="manoslibres" id="zonaManos" style="display:none">
+    <input type="checkbox" id="manosLibres" checked>
+    <span>Manos libres — háblale y responde sola</span>
+  </label>
+
+  <div class="fila" id="zonaDecir">
+    <input id="decir" placeholder="Pregúntale lo que quieras…" autocomplete="off">
+    <button id="btnDecir" style="flex:1">Enviar</button>
+  </div>
+
+  <div id="tarifa">VoltaicTech SpA</div>
+
+<script type="module">
+// SDK oficial de Simli (npm simli-client 3.0.2), empaquetado por nosotros.
+//
+// No se carga de un CDN a proposito: el paquete depende de livekit-client y
+// NINGUN CDN logra convertirlo a modulo ES. Probados el 09-ago-2026, todos
+// fallan: jsDelivr y esm.run con "failed to resolve an internal import",
+// esm.sh y skypack no responden el modulo, y unpkg crudo tira "exports is
+// not defined" porque es CommonJS. El bundle propio lo hace esbuild.
+import { SimliClient } from "/static/js/simli-client.esm.js";
+
+const $ = (id) => document.getElementById(id);
+
+let cliente = null, sesion = null, cronometro = null, t0 = 0;
+let usdSeg = 0.05 / 60, cerrando = false;
+const historial = [];
+
+function avisar(texto, informativo) {
+  const a = $("aviso");
+  if (!texto) { a.style.display = "none"; return; }
+  a.textContent = texto;
+  a.style.display = "block";
+  a.style.color = informativo ? "#93c5fd" : "#fca5a5";
+  a.style.background = informativo ? "rgba(59,130,246,.1)" : "rgba(220,38,38,.1)";
+  a.style.borderColor = informativo ? "rgba(59,130,246,.3)" : "rgba(220,38,38,.3)";
+}
+
+// ---- Estado inicial ----------------------------------------------------
+try {
+  const e = await (await fetch("/api/simli/estado")).json();
+  usdSeg = (e.usd_por_minuto || 0.05) / 60;
+  $("tarifa").textContent =
+    "USD " + (e.usd_por_minuto || 0).toFixed(2).replace(".", ",") +
+    " por minuto · máximo " + Math.round((e.tope_sesion_seg || 0) / 60) + " min por sesión";
+  if (!e.configurado) {
+    $("btn").disabled = true;
+    avisar("Falta configurar en el servidor: " + (e.falta || []).join(", "));
+  } else if (!e.disponible) {
+    $("btn").disabled = true;
+    avisar(e.motivo || "No disponible por ahora.");
+  }
+} catch (_) { /* si falla, que decida el servidor al apretar */ }
+
+// ---- Abrir ------------------------------------------------------------
+async function abrir() {
+  $("btn").disabled = true;
+  $("btn").textContent = "Conectando…";
+  avisar("");
+  try {
+    const r = await fetch("/api/simli/sesion", { method: "POST" });
+    const j = await r.json();
+    if (!r.ok || !j.success) throw new Error(j.error || "No se pudo abrir la sesión.");
+    sesion = j;
+
+    // Los servidores ICE vienen del servidor junto con el token. Con null el
+    // WebRTC no atraviesa el NAT y muere con CONNECTION TIMED OUT; y pedirlos
+    // desde aca obligaria a exponer la API key, que es lo que evitamos.
+    cliente = new SimliClient(j.session_token, $("video"), $("audio"),
+                              j.ice_servers && j.ice_servers.length ? j.ice_servers : null);
+
+    // Nombres de eventos sacados del Events.d.ts del paquete publicado. NO
+    // son "connected"/"disconnected"/"failed": esos no existen y usarlos deja
+    // la pantalla pegada en "Conectando..." aunque el video ya este llegando.
+    cliente.on("start", enVivo);
+    cliente.on("stop", () => terminar("Se cortó la conexión."));
+    cliente.on("error", (d) => avisar("Video: " + d));
+    cliente.on("startup_error", (d) => terminar("No se pudo conectar: " + d));
+    // Mientras habla, el microfono se cierra. Si no, se escucha a si misma y
+    // se queda respondiendose sola en un bucle.
+    cliente.on("speaking", () => {
+      catalinaHablando = true;
+      $("escenario").classList.add("hablando");
+      pararOidor();
+    });
+    cliente.on("silent", () => {
+      catalinaHablando = false;
+      $("escenario").classList.remove("hablando");
+      if (t0) setTimeout(arrancarOidor, 500);   // un respiro antes de reabrir
+    });
+
+    // Respaldo que no depende del SDK: cuando el elemento <video> recibe los
+    // primeros fotogramas, estamos en vivo. Si algun dia cambian los nombres
+    // de los eventos, esto sigue funcionando.
+    $("video").addEventListener("loadedmetadata", enVivo, { once: true });
+
+    await cliente.start();
+  } catch (e) {
+    avisar(e.message);
+    $("btn").disabled = false;
+    $("btn").textContent = "Hablar con Catalina";
+    sesion = null; cliente = null;
+  }
+}
+
+// ---- En vivo ----------------------------------------------------------
+function enVivo() {
+  if (t0) return;                       // el evento puede llegar dos veces
+  t0 = Date.now();
+  $("reposo").style.display = "none";
+  $("video").style.display = "block";
+  $("hud").style.display = "flex";
+  $("zonaDecir").style.display = "flex";
+  $("dice").style.display = "block";
+  $("btn").disabled = false;
+  $("btn").textContent = "Colgar";
+  $("btn").className = "colgar";
+
+  // El interruptor de manos libres solo aparece si el navegador puede: hace
+  // falta HTTPS y soporte de reconocimiento de voz. Si no, se explica por que
+  // en vez de mostrar un boton que no hace nada.
+  $("zonaManos").style.display = "flex";
+  if (hayMicrofono()) {
+    arrancarOidor();
+  } else {
+    $("manosLibres").checked = false;
+    $("manosLibres").disabled = true;
+    $("zonaManos").querySelector("span").textContent =
+      !Reconocedor ? "Manos libres — este navegador no lo soporta (usa Chrome o Safari)"
+                   : "Manos libres — necesita HTTPS; entra por el dominio, no por la IP";
+    $("decir").focus();
+  }
+
+  cronometro = setInterval(() => {
+    const s = Math.floor((Date.now() - t0) / 1000);
+    const quedan = sesion.tope_sesion_seg - s;
+    $("reloj").textContent = Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2);
+    $("costo").textContent = "USD " + (s * usdSeg).toFixed(2).replace(".", ",");
+    $("reloj").className = quedan <= 30 ? "alerta" : "";
+    if (quedan <= 0) terminar("Se llegó al máximo de la sesión.");
+  }, 1000);
+}
+
+// ============================================================
+//  MANOS LIBRES
+//
+//  Usa el reconocimiento de voz del navegador, que es gratis y no manda el
+//  audio a ningun servicio nuestro. SOLO FUNCIONA EN HTTPS (o en localhost):
+//  los navegadores no dan microfono en http plano, asi que por IP directa no
+//  va a arrancar y hay que entrar por el dominio con certificado.
+//
+//  El detalle importante es callarse mientras Catalina habla: si el microfono
+//  sigue abierto, se escucha a si misma y entra en un bucle de responderse.
+//  Por eso se corta con el evento "speaking" y se reanuda con "silent".
+// ============================================================
+const Reconocedor = window.SpeechRecognition || window.webkitSpeechRecognition;
+let oidor = null, escuchando = false, catalinaHablando = false;
+
+function hayMicrofono() {
+  return !!Reconocedor && window.isSecureContext;
+}
+
+function pintarOyendo(activo, texto) {
+  $("oyendo").classList.toggle("visible", activo);
+  $("escenario").classList.toggle("oyendo", activo);
+  $("parcial").textContent = texto || "Te escucho…";
+}
+
+function arrancarOidor() {
+  if (!hayMicrofono() || !$("manosLibres").checked || escuchando) return;
+  oidor = new Reconocedor();
+  oidor.lang = "es-CL";
+  oidor.continuous = true;
+  oidor.interimResults = true;
+
+  oidor.onstart = () => { escuchando = true; pintarOyendo(true); };
+
+  oidor.onresult = (ev) => {
+    let parcial = "", listo = "";
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      const t = ev.results[i][0].transcript;
+      if (ev.results[i].isFinal) listo += t; else parcial += t;
+    }
+    if (parcial) pintarOyendo(true, parcial);
+    if (listo.trim()) {
+      pintarOyendo(true, "…");
+      $("decir").value = listo.trim();
+      preguntar();
+    }
+  };
+
+  oidor.onerror = (ev) => {
+    if (ev.error === "not-allowed" || ev.error === "service-not-allowed") {
+      $("manosLibres").checked = false;
+      avisar("No se pudo usar el micrófono. Revisa el permiso del navegador.");
+      pintarOyendo(false);
+    }
+    // "no-speech" y "aborted" son normales: los ignoramos y onend reintenta.
+  };
+
+  // El navegador corta el reconocimiento cada cierto rato por su cuenta.
+  // Mientras la sesion siga viva y no este hablando ella, lo reanudamos.
+  oidor.onend = () => {
+    escuchando = false;
+    pintarOyendo(false);
+    if (t0 && $("manosLibres").checked && !catalinaHablando) {
+      setTimeout(arrancarOidor, 350);
+    }
+  };
+
+  try { oidor.start(); } catch (_) { escuchando = false; }
+}
+
+function pararOidor() {
+  if (oidor) { try { oidor.abort(); } catch (_) {} }
+  escuchando = false;
+  pintarOyendo(false);
+}
+
+// ---- Preguntar --------------------------------------------------------
+async function preguntar() {
+  const txt = $("decir").value.trim();
+  if (!txt || !cliente) return;
+  $("decir").value = "";
+  $("btnDecir").disabled = true;
+  $("dice").textContent = "…";
+
+  historial.push({ role: "user", content: txt });
+  try {
+    const r = await fetch("/api/simli/hablar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ asistente: "catalina", mensajes: historial.slice(-10) })
+    });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({}));
+      throw new Error(j.error || "No pudo responder.");
+    }
+    // El texto viene en cabecera (codificado, porque HTTP no acepta tildes).
+    const texto = decodeURIComponent(r.headers.get("X-Texto") || "");
+    $("dice").textContent = texto;
+    historial.push({ role: "assistant", content: texto });
+
+    // Y el cuerpo es el audio PCM16 crudo que Simli sincroniza con la cara.
+    const audio = new Uint8Array(await r.arrayBuffer());
+    // Cerramos el microfono ANTES de que empiece a hablar, sin esperar el
+    // evento "speaking": si ese evento llega tarde, alcanza a oirse a si misma.
+    catalinaHablando = true;
+    pararOidor();
+    cliente.ClearBuffer();          // corta lo que estuviera diciendo
+    cliente.sendAudioData(audio);
+  } catch (e) {
+    $("dice").textContent = "";
+    avisar(e.message);
+    // Si fallo, no va a hablar: hay que volver a abrir el microfono nosotros
+    // porque el evento "silent" nunca va a llegar.
+    catalinaHablando = false;
+    if (t0) setTimeout(arrancarOidor, 400);
+  } finally {
+    $("btnDecir").disabled = false;
+    if (!$("manosLibres").checked) $("decir").focus();
+  }
+}
+
+// ---- Colgar -----------------------------------------------------------
+function terminar(motivo) {
+  if (cerrando) return;
+  cerrando = true;
+  clearInterval(cronometro);
+  pararOidor();
+  const segundos = t0 ? Math.floor((Date.now() - t0) / 1000) : 0;
+
+  try { if (cliente) cliente.stop(); } catch (_) {}
+  // keepalive: que el gasto quede anotado aunque cierren la pestana de golpe.
+  if (segundos > 0) {
+    fetch("/api/simli/cerrar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ segundos }),
+      keepalive: true
+    }).catch(() => {});
+  }
+
+  $("video").style.display = "none";
+  $("reposo").style.display = "block";
+  $("hud").style.display = "none";
+  $("zonaDecir").style.display = "none";
+  $("zonaManos").style.display = "none";
+  $("dice").style.display = "none";
+  $("dice").textContent = "";
+  pintarOyendo(false);
+  $("btn").className = "";
+  $("btn").textContent = "Hablar con Catalina";
+  $("btn").disabled = false;
+  if (motivo) avisar(motivo, true);
+
+  cliente = null; sesion = null; t0 = 0; historial.length = 0; cerrando = false;
+}
+
+$("btn").onclick = () => (t0 ? terminar("") : abrir());
+$("btnDecir").onclick = preguntar;
+$("manosLibres").addEventListener("change", (e) => {
+  if (e.target.checked && t0 && !catalinaHablando) arrancarOidor();
+  else pararOidor();
+});
+$("decir").addEventListener("keydown", (e) => { if (e.key === "Enter") preguntar(); });
+window.addEventListener("pagehide", () => { if (t0) terminar(""); });
+</script>
+
+</body>
+</html>

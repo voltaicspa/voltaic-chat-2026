@@ -3,326 +3,582 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VoltaicChat - Dashboard</title>
+    <title>Voltaic Chat - Command Center</title>
+    
     <style>
         :root {
-            --bg-color: #0d0e12;
-            --card-bg: #16181f;
-            --border-color: #262933;
-            --accent-purple: #8b5cf6;
-            --accent-blue: #3b82f6;
-            --text-main: #f3f4f6;
-            --text-sub: #9ca3af;
-            --success-color: #10b981;
+            --bg-color: #0a0a0f;
+            --card-bg: #161822;
+            --border-color: #26293b;
+            --accent-purple: #7b2ffc;
+            --accent-cyan: #00d4ff;
+            --text-main: #f0f0f5;
+            --text-muted: #8a8d9e;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-main);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
             padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .dashboard-container {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
         }
 
         header h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            color: var(--accent-blue);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            font-size: 20px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .btn-back {
-            color: var(--text-sub);
-            text-decoration: none;
-            font-size: 0.9rem;
-            padding: 6px 12px;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-            transition: all 0.2s;
-        }
-
-        .btn-back:hover {
-            background: var(--border-color);
-            color: #fff;
-        }
-
-        .dashboard-grid {
+        .work-modes {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
         }
 
-        .card {
-            background-color: var(--card-bg);
+        .mode-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .mode-btn:hover, .mode-btn.active {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.08);
+            color: var(--accent-cyan);
+        }
+
+        .copilot-panel {
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            padding: 20px;
+            padding: 25px;
             display: flex;
             flex-direction: column;
+            gap: 15px;
+        }
+
+        .copilot-panel h2 {
+            font-size: 18px;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 600;
+            display: flex;
             justify-content: space-between;
         }
 
-        .card-header {
-            font-size: 0.85rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-sub);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        label {
-            font-size: 0.8rem;
-            color: var(--text-sub);
-            margin-bottom: 6px;
-            display: block;
-        }
-
-        textarea, select, input[type="text"], input[type="password"] {
-            width: 100%;
-            background-color: #0b0c0f;
+        select, input[type="text"], textarea {
+            background: var(--bg-color);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
             color: var(--text-main);
             padding: 10px;
-            font-size: 0.9rem;
-            box-sizing: border-box;
+            border-radius: 8px;
+            font-size: 14px;
             outline: none;
-            margin-bottom: 10px;
         }
 
-        textarea:focus, select:focus, input:focus {
+        select:focus, input:focus, textarea:focus {
             border-color: var(--accent-purple);
+        }
+
+        /* Sección Estilos de Audio Avanzados */
+        .audio-settings-box {
+            background: rgba(10, 10, 15, 0.6);
+            border: 1px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .audio-settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            accent-color: var(--accent-cyan);
+            cursor: pointer;
+        }
+
+        .toggle-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-main);
+            margin-top: 5px;
         }
 
         textarea {
             resize: vertical;
-            min-height: 90px;
+            min-height: 160px;
+            font-family: monospace;
+            line-height: 1.4;
         }
 
-        .btn-save {
-            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-purple), #5b11cc);
             color: white;
             border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 600;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
-            width: fit-content;
             transition: opacity 0.2s;
         }
 
-        .btn-save:hover {
-            opacity: 0.9;
+        .btn-call {
+            background: #22c55e;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
         }
 
-        .status-tag {
-            font-size: 0.75rem;
-            color: var(--success-color);
-            margin-top: 8px;
-            display: none;
-        }
+        button:hover { opacity: 0.9; }
 
-        .range-container {
-            margin-top: 10px;
-        }
-
-        input[type="range"] {
-            width: 100%;
-            accent-color: var(--accent-purple);
-        }
-
-        .stats-container {
-            display: flex;
-            gap: 30px;
-            margin-bottom: 15px;
-        }
-
-        .stat-box h2 {
-            margin: 0;
-            font-size: 2rem;
-            color: var(--accent-blue);
-        }
-
-        .stat-box span {
-            font-size: 0.8rem;
-            color: var(--text-sub);
+        .status-bar {
+            font-size: 13px;
+            color: var(--accent-cyan);
+            min-height: 18px;
+            font-weight: 500;
         }
     </style>
+
+    <!-- SDK Oficial de ElevenLabs ConvAI -->
+    <script src="https://cdn.jsdelivr.net/npm/@elevenlabs/client@latest/dist/index.umd.js"></script>
 </head>
 <body>
 
+<div class="dashboard-container">
     <header>
-        <h1>⬡ Dashboard</h1>
-        <a href="/" class="btn-back">← Volver al Chat</a>
+        <h1>⚡ VoltaicChat — Command Center</h1>
+        <span style="font-size: 12px; color: var(--text-muted);">Usuario: Cristian Godoy</span>
     </header>
 
-    <div class="dashboard-grid">
-        
-        <!-- TARJETA 1: REGLAS DEL SISTEMA -->
-        <div class="card">
-            <div>
-                <div class="card-header">📋 Reglas del Sistema</div>
-                <label>Instrucciones que el modelo debe seguir</label>
-                <textarea id="systemPrompt" placeholder="Escribe aquí las reglas del sistema..."></textarea>
-            </div>
-            <div>
-                <button class="btn-save" onclick="saveData('prompt')">💾 Guardar Reglas</button>
-                <div class="status-tag" id="status-prompt">✓ Listo</div>
-            </div>
-        </div>
-
-        <!-- TARJETA 2: CONFIGURACIÓN DE VOZ -->
-        <div class="card">
-            <div>
-                <div class="card-header">🔊 Configuración de Voz</div>
-                <label>Voz activa</label>
-                <select id="voiceId">
-                    <option value="es-ES-ElviraNeural">Elvira (Femenina)</option>
-                    <option value="es-ES-AlvaroNeural">Álvaro (Masculino)</option>
-                    <option value="es-MX-DaliaNeural">Dalia (Femenina - MX)</option>
-                    <option value="es-CL-LorenzoNeural">Lorenzo (Masculino - CL)</option>
-                </select>
-            </div>
-            <div>
-                <button class="btn-save" onclick="saveData('voice')">💾 Guardar Voz</button>
-                <div class="status-tag" id="status-voice">✓ Listo</div>
-            </div>
-        </div>
-
-        <!-- TARJETA 3: MODELO Y TEMPERATURA -->
-        <div class="card">
-            <div>
-                <div class="card-header">⚙️ Modelo y Temperatura</div>
-                <label>Modelo activo</label>
-                <select id="modelSelect">
-                    <optgroup label="DeepSeek">
-                        <option value="deepseek-chat">DeepSeek-V3 (Potente)</option>
-                        <option value="deepseek-reasoner">DeepSeek-R1 (Razonamiento)</option>
-                    </optgroup>
-                    <optgroup label="Google Gemini">
-                        <option value="gemini-2.5-flash">Gemini 2.5 Flash (Ultrarrápido)</option>
-                        <option value="gemini-2.5-pro">Gemini 2.5 Pro (Razonamiento Avanzado)</option>
-                    </optgroup>
-                </select>
-
-                <div class="range-container">
-                    <label>Temperatura: <span id="tempValue">0.7</span></label>
-                    <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7" oninput="document.getElementById('tempValue').innerText = this.value">
-                </div>
-            </div>
-            <div>
-                <button class="btn-save" onclick="saveData('model')">💾 Guardar Modelo</button>
-                <div class="status-tag" id="status-model">✓ Listo</div>
-            </div>
-        </div>
-
-        <!-- TARJETA 4: CLAVES DE API (NUEVA) -->
-        <div class="card">
-            <div>
-                <div class="card-header">🔑 Claves de API / Proveedores</div>
-                
-                <label>Google Gemini API Key</label>
-                <input type="password" id="geminiApiKey" placeholder="AIzaSy...">
-
-                <label>DeepSeek API Key</label>
-                <input type="password" id="deepseekApiKey" placeholder="sk-...">
-            </div>
-            <div>
-                <button class="btn-save" onclick="saveData('keys')">💾 Guardar Claves</button>
-                <div class="status-tag" id="status-keys">✓ Listo</div>
-            </div>
-        </div>
-
-        <!-- TARJETA 5: ESTADÍSTICAS -->
-        <div class="card">
-            <div>
-                <div class="card-header">📊 Estadísticas</div>
-                <div class="stats-container">
-                    <div class="stat-box">
-                        <h2 id="msgCount">0</h2>
-                        <span>Mensajes</span>
-                    </div>
-                    <div class="stat-box">
-                        <h2 id="tokenCount">0</h2>
-                        <span>Tokens</span>
-                    </div>
-                </div>
-            </div>
-            <div>
-                <button class="btn-save" style="background: #2563eb;" onclick="loadConfig()">🔄 Actualizar</button>
-            </div>
-        </div>
-
+    <div class="work-modes">
+        <button class="mode-btn active" onclick="setWorkMode('general', this)">🌐 General</button>
+        <button class="mode-btn" onclick="setWorkMode('dev', this)">💻 Dev / Code</button>
+        <button class="mode-btn" onclick="setWorkMode('business', this)">📈 Estrategia</button>
+        <button class="mode-btn" onclick="setWorkMode('creative', this)">✍️ Redactor</button>
     </div>
 
-    <script>
-        // Cargar configuración desde la API
-        async function loadConfig() {
-            try {
-                const res = await fetch('/api/config');
-                const data = await res.json();
+    <div class="copilot-panel">
+        <h2>🎙️ Gestión de Copilotos y Modulación de Voz</h2>
 
-                if (data.system_prompt) document.getElementById('systemPrompt').value = data.system_prompt;
-                if (data.voice_id) document.getElementById('voiceId').value = data.voice_id;
-                if (data.model) document.getElementById('modelSelect').value = data.model;
-                if (data.gemini_api_key) document.getElementById('geminiApiKey').value = data.gemini_api_key;
-                if (data.deepseek_api_key) document.getElementById('deepseekApiKey').value = data.deepseek_api_key;
-                if (data.temperature !== undefined) {
-                    document.getElementById('temperature').value = data.temperature;
-                    document.getElementById('tempValue').innerText = data.temperature;
-                }
-            } catch (err) {
-                console.error("Error al cargar la configuración:", err);
+        <div class="form-row">
+            <!-- Selector de Agente -->
+            <div class="form-group">
+                <label for="selectAgent">Agente ElevenLabs:</label>
+                <select id="selectAgent" onchange="cargarConfiguracionAgente()">
+                    <option value="agent_4101krkj2n1jf04bxfhpbjmt3qzf">Catalina Comercial (Vendedora VoltaicSpA)</option>
+                    <option value="agent_5801kyx7byh9fn0t0g3drf88z5m2">Camila (Asistente Personal de Cristian)</option>
+                </select>
+            </div>
+
+            <!-- Selector de Voz (Hombres y Mujeres en Español / Catálogo) -->
+            <div class="form-group">
+                <label for="selectVoice">Voz del Catálogo (Español / Multilingüe):</label>
+                <select id="selectVoice">
+                    <option value="">Cargando voces de la cuenta...</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Panel Avanzado de Modulación y Ajustes de Voz -->
+        <div class="audio-settings-box" id="audioSettings" style="display:none">
+            <span style="font-size: 13px; font-weight: bold; color: var(--accent-cyan);">🎛️ Parámetros de Voz y Filtros Audio (ElevenLabs)</span>
+            
+            <div class="audio-settings-grid">
+                <div class="form-group">
+                    <label for="rangeStability">Estabilidad (Stability): <span id="valStability">50%</span></label>
+                    <input type="range" id="rangeStability" min="0" max="1" step="0.05" value="0.5" oninput="updateVal('valStability', this.value)">
+                </div>
+
+                <div class="form-group">
+                    <label for="rangeSimilarity">Claridad y Similitud (Similarity): <span id="valSimilarity">75%</span></label>
+                    <input type="range" id="rangeSimilarity" min="0" max="1" step="0.05" value="0.75" oninput="updateVal('valSimilarity', this.value)">
+                </div>
+
+                <div class="form-group">
+                    <label for="rangeStyle">Exageración de Estilo (Style): <span id="valStyle">0%</span></label>
+                    <input type="range" id="rangeStyle" min="0" max="1" step="0.05" value="0" oninput="updateVal('valStyle', this.value)">
+                </div>
+
+                <div class="form-group">
+                    <label>Filtros de Audio:</label>
+                    <label class="toggle-box">
+                        <input type="checkbox" id="checkSpeakerBoost" checked>
+                        <span>🔊 Reducción de Ruido & Boost de Audio</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="agentFirstMessage">Saludo Inicial (First Message):</label>
+            <input type="text" id="agentFirstMessage" placeholder="Ej: Hola Cristian, soy Catalina. ¿En qué trabajamos hoy?">
+        </div>
+
+        <div class="form-group">
+            <label for="agentPrompt">Instrucciones y Personalidad (System Prompt):</label>
+            <textarea id="agentPrompt" placeholder="Cargando instrucciones..."></textarea>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-primary" onclick="guardarInstrucciones()">💾 Guardar Cambios y Voz en ElevenLabs</button>
+            <button id="btnVoiceCall" class="btn-call" style="display:none" onclick="toggleLlamadaVoz()">📞 Iniciar Llamada con Copiloto</button>
+        </div>
+
+        <div id="statusMsg" class="status-bar"></div>
+    </div>
+
+    <!-- CHAT DE VOZ OFICIAL ELEVENLABS (funciona en iPhone) -->
+    <div class="copilot-panel" style="text-align:center">
+        <h2 style="justify-content:center">🎧 CHAT DE VOZ INTERACTIVO (CATALINA)</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:15px">Habla con Catalina directamente. Funciona en PC e iPhone.</p>
+        <!-- Vendedora. Camila (asistente personal) tiene su propia pagina limpia en /camila -->
+        <elevenlabs-convai agent-id="agent_4101krkj2n1jf04bxfhpbjmt3qzf"></elevenlabs-convai>
+        <script src="https://elevenlabs.io/convai-widget/index.js" async type="text/javascript"></script>
+    </div>
+</div>
+
+<script>
+    // === DETECTAR USUARIO y mostrar/ocultar ElevenLabs ===
+    (function() {
+        const params = new URLSearchParams(window.location.search);
+        const user = params.get('user');
+        if (user) {
+            fetch('/api/user/' + user)
+                .then(r => r.json())
+                .then(d => {
+                    if (d.has_elevenlabs === true) {
+                        // Mostrar todo lo de ElevenLabs
+                        ['panelCopiloto','panelWidget','btnVoiceCall','audioSettings'].forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.style.display = '';
+                        });
+                    }
+                });
+        }
+    })();
+
+    let currentConversation = null;
+    let isConnected = false;
+
+    // Lista de voces por defecto como respaldo (fallback) si el servidor local no está corriendo
+    const VOCES_FALLBACK = [
+        { voice_id: "21m00Tcm4TlvDq8ikWAM", name: "Rachel (Mujer - Español / Multilingüe)" },
+        { voice_id: "AZnzlk1XvdvUeBnXmlld", name: "Domi (Mujer - Expresivo)" },
+        { voice_id: "EXAVITQu4vr4xnSDxMaL", name: "Bella (Mujer - Suave)" },
+        { voice_id: "ErXwobaYiN019PkySvjV", name: "Antoni (Hombre - Profesional)" },
+        { voice_id: "pNInz6obpgDQGcFmaJgB", name: "Adam (Hombre - Profundo)" }
+    ];
+
+    // Helper para resolver la URL de la API segun el entorno (Localhost, Vercel o Vista Previa)
+    function getApiUrl(path) {
+        // Si se abre como archivo local, apunta a la web de Vercel
+        if (window.location.protocol === 'file:' || !window.location.origin || window.location.origin === 'null' || window.location.href.startsWith('blob:')) {
+            return 'https://voltaic-chat.vercel.app' + path;
+        }
+        return path;
+    }
+
+    function updateVal(elementId, val) {
+        document.getElementById(elementId).innerText = Math.round(val * 100) + '%';
+    }
+
+    // Poblar opciones en el selector de voces
+    function renderizarOpcionesVoces(listaVoces) {
+        const selectVoice = document.getElementById('selectVoice');
+        selectVoice.innerHTML = '';
+        listaVoces.forEach(voice => {
+            const opt = document.createElement('option');
+            opt.value = voice.voice_id;
+            opt.innerText = voice.name;
+            selectVoice.appendChild(opt);
+        });
+    }
+
+    // 1. Cargar catálogo completo de voces (con fallback automático si el servidor Flask no responde)
+
+    // Token de administrador. Se pide UNA vez y queda solo en la sesion del
+    // navegador: al cerrar la pestana se borra. No se guarda en el codigo.
+    function tokenAdmin() {
+        let t = sessionStorage.getItem('voltaic_token');
+        if (!t) {
+            t = prompt('Token de administrador de VoltaicChat:');
+            if (t) sessionStorage.setItem('voltaic_token', t.trim());
+        }
+        return (t || '').trim();
+    }
+
+    function cabecerasAdmin(extra) {
+        return Object.assign({'X-Voltaic-Token': tokenAdmin()}, extra || {});
+    }
+
+    async function cargarVoces() {
+        try {
+            const res = await fetch(getApiUrl('/api/voices'), {headers: cabecerasAdmin()});
+            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+            const result = await res.json();
+            
+            if (result.success && result.voices && result.voices.length > 0) {
+                renderizarOpcionesVoces(result.voices);
+            } else {
+                renderizarOpcionesVoces(VOCES_FALLBACK);
             }
+        } catch (e) {
+            console.warn('Servidor Flask no detectado aún, cargando catálogo de voz base:', e);
+            renderizarOpcionesVoces(VOCES_FALLBACK);
+        }
+    }
+
+    // 2. Cargar datos del Agente (incluyendo Estabilidad, Similitud, Estilo y Booster)
+    async function cargarConfiguracionAgente() {
+        const agentId = document.getElementById('selectAgent').value;
+        const statusLabel = document.getElementById('statusMsg');
+
+        if (agentId.startsWith('ID_TU_')) {
+            statusLabel.innerText = '💡 Ingresa el ID de tu segundo agente en el selector para sincronizarlo.';
+            return;
         }
 
-        // Guardar cambios
-        async function saveData(section) {
-            const payload = {
-                system_prompt: document.getElementById('systemPrompt').value,
-                voice_id: document.getElementById('voiceId').value,
-                model: document.getElementById('modelSelect').value,
-                temperature: parseFloat(document.getElementById('temperature').value),
-                gemini_api_key: document.getElementById('geminiApiKey').value,
-                deepseek_api_key: document.getElementById('deepseekApiKey').value
-            };
+        statusLabel.innerText = '⏳ Conectando con servidor Flask e ElevenLabs...';
 
+        try {
+            const res = await fetch(getApiUrl(`/api/copilots/${agentId}`), {headers: cabecerasAdmin()});
+            if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+            const result = await res.json();
+
+            if (result.success) {
+                document.getElementById('agentPrompt').value = result.data.prompt || '';
+                document.getElementById('agentFirstMessage').value = result.data.first_message || '';
+                
+                if (result.data.voice_id) {
+                    document.getElementById('selectVoice').value = result.data.voice_id;
+                }
+
+                // Cargar moduladores de voz
+                document.getElementById('rangeStability').value = result.data.stability;
+                updateVal('valStability', result.data.stability);
+
+                document.getElementById('rangeSimilarity').value = result.data.similarity_boost;
+                updateVal('valSimilarity', result.data.similarity_boost);
+
+                document.getElementById('rangeStyle').value = result.data.style;
+                updateVal('valStyle', result.data.style);
+
+                document.getElementById('checkSpeakerBoost').checked = result.data.use_speaker_boost;
+
+                statusLabel.innerText = '✅ Instrucciones, voz y parámetros de audio cargados correctamente.';
+            } else {
+                statusLabel.innerText = '⚠️ Inicia `python app.py` en tu terminal para sincronizar con ElevenLabs.';
+            }
+        } catch (e) {
+            statusLabel.innerText = '💡 Vista previa. Ejecuta `python app.py` en tu terminal para conectar tu servidor real.';
+        }
+    }
+
+    // 3. Guardar Cambios (Prompt, First Message, Voz y Filtros)
+    async function guardarInstrucciones() {
+        const agentId = document.getElementById('selectAgent').value;
+        const prompt = document.getElementById('agentPrompt').value;
+        const firstMessage = document.getElementById('agentFirstMessage').value;
+        const voiceId = document.getElementById('selectVoice').value;
+        
+        const stability = document.getElementById('rangeStability').value;
+        const similarityBoost = document.getElementById('rangeSimilarity').value;
+        const style = document.getElementById('rangeStyle').value;
+        const useSpeakerBoost = document.getElementById('checkSpeakerBoost').checked;
+
+        const statusLabel = document.getElementById('statusMsg');
+
+        statusLabel.innerText = '⏳ Guardando modulaciones y datos en ElevenLabs...';
+
+        try {
+            const res = await fetch(getApiUrl(`/api/copilots/${agentId}`), {
+                method: 'PATCH',
+                headers: cabecerasAdmin({'Content-Type': 'application/json'}),
+                body: JSON.stringify({ 
+                    prompt: prompt, 
+                    first_message: firstMessage,
+                    voice_id: voiceId,
+                    stability: stability,
+                    similarity_boost: similarityBoost,
+                    style: style,
+                    use_speaker_boost: useSpeakerBoost
+                })
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                statusLabel.innerText = '✨ ' + result.message;
+            } else {
+                statusLabel.innerText = '❌ Error al actualizar: ' + result.error;
+            }
+        } catch (e) {
+            statusLabel.innerText = '❌ Error al enviar solicitud.';
+        }
+    }
+
+    // 4. Llamada de Voz WebRTC
+    // Desbloquea el audio de salida en iOS Safari (requiere gesto del usuario)
+    function desbloquearAudioSalida() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            ctx.resume();
+            // Reproducir un buffer silencioso para "despertar" el altavoz
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            gain.gain.value = 0.001; // casi silencio
+            osc.connect(gain); gain.connect(ctx.destination);
+            osc.start(0);
+            setTimeout(() => { try { osc.stop(); } catch(_) {} }, 100);
+        } catch (_) {}
+        // Forzar playsinline en el audio de salida de WebRTC
+        document.querySelectorAll('audio').forEach(a => { a.setAttribute('playsinline', ''); a.setAttribute('webkit-playsinline', ''); });
+    }
+
+    async function toggleLlamadaVoz() {
+        const btnCall = document.getElementById('btnVoiceCall');
+        const statusLabel = document.getElementById('statusMsg');
+        const agentId = document.getElementById('selectAgent').value;
+
+        if (!isConnected) {
             try {
-                const res = await fetch('/api/config', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                desbloquearAudioSalida();
+                await navigator.mediaDevices.getUserMedia({ audio: true });
+                statusLabel.innerText = '🎙️ Conectando con Catalina...';
+
+                currentConversation = await ElevenLabsClient.Conversation.startSession({
+                    agentId: agentId,
+                    onConnect: () => {
+                        isConnected = true;
+                        statusLabel.innerText = '🟢 En llamada activa con Catalina.';
+                        btnCall.innerText = '🔴 Terminar Llamada';
+                        btnCall.style.background = '#ef4444';
+                    },
+                    onDisconnect: () => {
+                        isConnected = false;
+                        statusLabel.innerText = '🔴 Llamada finalizada.';
+                        btnCall.innerText = '📞 Iniciar Llamada con Copiloto';
+                        btnCall.style.background = '#22c55e';
+                    },
+                    onError: (err) => {
+                        console.error('Error de voz:', err);
+                        statusLabel.innerText = '❌ Error en la conexión de voz.';
+                    },
+                    onModeChange: (mode) => {
+                        statusLabel.innerText = mode.mode === 'speaking' ? '🗣️ Catalina está hablando...' : '👂 Escuchándote...';
+                        // iOS Safari: forzar play en el audio de salida cuando habla
+                        if (mode.mode === 'speaking') {
+                            desbloquearAudioSalida();
+                            setTimeout(desbloquearAudioSalida, 300);
+                        }
+                    }
                 });
 
-                if (res.ok) {
-                    const statusTag = document.getElementById(`status-${section}`);
-                    if (statusTag) {
-                        statusTag.style.display = 'block';
-                        setTimeout(() => statusTag.style.display = 'none', 2500);
-                    }
-                }
             } catch (err) {
-                alert("Error al conectar con el servidor.");
+                alert('No se pudo acceder al micrófono.');
+                statusLabel.innerText = '❌ Permiso de micrófono denegado.';
+            }
+        } else {
+            if (currentConversation) {
+                await currentConversation.endSession();
             }
         }
+    }
 
-        document.addEventListener('DOMContentLoaded', loadConfig);
-    </script>
+    const PROMPTS = {
+        general: 'Eres Catalina, asistente ejecutiva de VoltaicSpA. Hablas español chileno, de forma cálida y profesional. Ayudas con cualquier tema: consultas, tareas, ideas. Eres proactiva y eficiente.',
+        dev: 'Eres Catalina, asistente de desarrollo de VoltaicSpA. Modo programación. Ayudas con código, debugging, arquitectura de software, Flutter, Python, APIs. Explicas conceptos técnicos con claridad. Piensa paso a paso antes de responder.',
+        business: 'Eres Catalina, asesora estratégica de VoltaicSpA. Modo negocios. Analizas situaciones de mercado, oportunidades comerciales, estrategia de ventas B2B, licitaciones, y das consejos empresariales para PYME chilena. Sé directa y analítica.',
+        creative: 'Eres Catalina, redactora creativa de VoltaicSpA. Modo escritura. Ayudas con textos comerciales, landing pages, cartas, propuestas, emails profesionales, y contenido creativo. Escribe con estilo claro, persuasivo y profesional.'
+    };
+
+    async function setWorkMode(mode, btn) {
+        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('statusMsg').innerText = `Modo: ${mode.toUpperCase()} - Guardando...`;
+
+        // Update the prompt textarea with the mode-specific prompt
+        const ta = document.getElementById('agentPrompt');
+        if (ta) {
+            ta.value = PROMPTS[mode] || PROMPTS.general;
+        }
+
+        // Auto-save to ElevenLabs
+        try {
+            await guardarInstrucciones();
+            document.getElementById('statusMsg').innerText = `Modo: ${mode.toUpperCase()} - Listo`;
+        } catch(e) {
+            document.getElementById('statusMsg').innerText = `Modo: ${mode.toUpperCase()} (guarda manual)`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        await cargarVoces();
+        await cargarConfiguracionAgente();
+    });
+</script>
+
 </body>
 </html>

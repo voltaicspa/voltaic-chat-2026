@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Catalina — VoltaicTech</title>
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0d14">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎥</text></svg>">
+
+<!--
+  SDK de AliRTC (Alibaba). Vidu NO lo distribuye: hay que cargarlo aparte.
+  URL verificada 09-ago-2026: responde 200 y es application/javascript.
+-->
+<script src="https://g.alicdn.com/apsara-media-box/imp-web-rtc/6.11.8/aliyun-rtc-sdk.js"></script>
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh; min-height: 100dvh;
+    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px;
+    background: radial-gradient(ellipse at top, #1a1d2e 0%, #0b0d14 60%);
+    color: #e8e9f0; text-align: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 { font-size: 25px; font-weight: 600; letter-spacing: -.4px; }
+  .sub { font-size: 13px; color: #9297ad; max-width: 320px; line-height: 1.55; margin-top: 6px; }
+
+  /* 9:16 vertical para que quepa el personaje DE CUERPO ENTERO. Si el
+     contenedor fuera cuadrado o apaisado, la imagen se recortaria a medio
+     cuerpo y se perderian los gestos de manos, que es la gracia. */
+  #escenario {
+    width: 100%; max-width: 380px; aspect-ratio: 9/16;
+    max-height: 68vh;
+    border-radius: 18px; overflow: hidden; position: relative;
+    background: #11131d; border: 1px solid #26293b;
+    display: grid; place-items: center;
+  }
+  /* contain, no cover: preferimos ver el cuerpo entero con bandas al lado
+     antes que cortarle las manos o los pies para llenar la caja. */
+  #video { width: 100%; height: 100%; object-fit: contain; display: none; }
+  #reposo { font-size: 54px; opacity: .5; }
+
+  /* Cronometro y costo, siempre a la vista: a USD 0,45 el minuto nadie
+     deberia descubrir el gasto despues. */
+  #hud {
+    position: absolute; top: 10px; left: 10px; right: 10px;
+    display: none; justify-content: space-between; align-items: center;
+    font-size: 12px; font-variant-numeric: tabular-nums;
+  }
+  #hud span {
+    background: rgba(11,13,20,.78); backdrop-filter: blur(6px);
+    padding: 5px 10px; border-radius: 999px; border: 1px solid #2b2f45;
+  }
+  #reloj.alerta { color: #fca5a5; border-color: #7f1d1d; }
+
+  .fila { display: flex; gap: 10px; width: 100%; max-width: 420px; }
+  button {
+    flex: 1; padding: 14px 18px; font-size: 15px; font-weight: 600;
+    border: none; border-radius: 13px; cursor: pointer; color: #fff;
+    background: linear-gradient(145deg, #7b2ffc, #4c1d95);
+    transition: opacity .15s;
+  }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.colgar { background: linear-gradient(145deg, #dc2626, #7f1d1d); }
+
+  #decir {
+    flex: 2; padding: 13px 15px; font-size: 15px; border-radius: 13px;
+    background: #161822; border: 1px solid #2b2f45; color: #e8e9f0;
+  }
+  #decir::placeholder { color: #5a5d6e; }
+  #zonaDecir { display: none; }
+
+  #aviso {
+    display: none; font-size: 13px; max-width: 400px;
+    border-radius: 10px; padding: 11px 15px; line-height: 1.5;
+    color: #fca5a5; background: rgba(220,38,38,.1); border: 1px solid rgba(220,38,38,.3);
+  }
+  #tarifa { font-size: 11px; color: #4e5468; letter-spacing: .3px; }
+</style>
+</head>
+<body>
+
+  <div>
+    <h1>Catalina</h1>
+    <p class="sub">Te explico Voltaic Radar en video. Háblale o escríbele — y
+    pídele lo que quieras: que salude, que levante un brazo, que se mueva.</p>
+  </div>
+
+  <div id="escenario">
+    <div id="reposo">🎥</div>
+    <video id="video" autoplay playsinline></video>
+    <div id="hud">
+      <span id="reloj">0:00</span>
+      <span id="costo">USD 0,00</span>
+    </div>
+  </div>
+
+  <div id="aviso"></div>
+
+  <div class="fila">
+    <button id="btn">Hablar con Catalina</button>
+  </div>
+
+  <div class="fila" id="zonaDecir">
+    <input id="decir" placeholder="Escríbele o pídele una acción…" autocomplete="off">
+    <button id="btnDecir" style="flex:1">Enviar</button>
+  </div>
+
+  <div id="tarifa">VoltaicTech SpA</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var USD_SEG = 0.0075;          // tarifa publicada de Vidu: 3 creditos / 2 s
+  var sesion = null;             // {live_id, rtc, ws_url, tope_sesion_seg}
+  var ws = null, rtc = null, cronometro = null;
+  var t0 = 0, seq = 1, connId = "web-" + Math.random().toString(36).slice(2, 9);
+  var colgando = false;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function avisar(texto, esError) {
+    var a = $("aviso");
+    if (!texto) { a.style.display = "none"; return; }
+    a.textContent = texto;
+    a.style.display = "block";
+    a.style.color = esError === false ? "#93c5fd" : "#fca5a5";
+    a.style.background = esError === false ? "rgba(59,130,246,.1)" : "rgba(220,38,38,.1)";
+    a.style.borderColor = esError === false ? "rgba(59,130,246,.3)" : "rgba(220,38,38,.3)";
+  }
+
+  // ---- Estado inicial: cuanto cuesta y si queda presupuesto -------------
+  fetch("/api/vidu/estado").then(function (r) { return r.json(); }).then(function (e) {
+    $("tarifa").textContent = "USD " + (e.usd_por_minuto || 0).toFixed(2).replace(".", ",") +
+      " por minuto · máximo " + Math.round((e.tope_sesion_seg || 0) / 60) + " min por sesión";
+    if (!e.configurado) {
+      $("btn").disabled = true;
+      avisar("El video todavía no está configurado en el servidor (falta VIDU_API_KEY o VIDU_IMAGE_URI).");
+    } else if (!e.disponible) {
+      $("btn").disabled = true;
+      avisar(e.motivo || "No disponible por ahora.");
+    }
+  }).catch(function () { /* si falla, el boton sigue y el servidor decidira */ });
+
+  // ---- Abrir la sesion --------------------------------------------------
+  function abrir() {
+    $("btn").disabled = true;
+    $("btn").textContent = "Conectando…";
+    avisar("");
+
+    fetch("/api/vidu/sesion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Solo el nombre: la personalidad la pone el servidor. Si viajara desde
+      // aca, cualquiera se la reescribiria desde la consola del navegador.
+      body: JSON.stringify({ asistente: "catalina", call_mode: "video" })
+    })
+    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+    .then(function (res) {
+      if (!res.ok || !res.j.success) throw new Error(res.j.error || "No se pudo abrir la sesión.");
+      sesion = res.j;
+      return conectar();
+    })
+    .catch(function (e) {
+      avisar(e.message);
+      $("btn").disabled = false;
+      $("btn").textContent = "Hablar con Catalina";
+    });
+  }
+
+  // ---- Las dos conexiones en paralelo: WebSocket (control) + AliRTC (medios)
+  function conectar() {
+    return new Promise(function (resolve, reject) {
+      ws = new WebSocket(sesion.ws_url);
+
+      ws.onopen = function () {
+        // conn_init es el tipo 1 segun la documentacion de Vidu.
+        enviarWS(1, { conn_init: { version: 1 } });
+        unirseRTC().then(resolve).catch(reject);
+      };
+      ws.onerror = function () { reject(new Error("Falló la conexión de control con Vidu.")); };
+      ws.onclose = function () { if (!colgando) terminar("Se cortó la conexión."); };
+      ws.onmessage = function (ev) {
+        try { manejarMensaje(JSON.parse(ev.data)); } catch (_) {}
+      };
+    });
+  }
+
+  function enviarWS(tipo, payload) {
+    if (!ws || ws.readyState !== 1) return;
+    ws.send(JSON.stringify({
+      type: tipo,
+      live_id: sesion.live_id,
+      conn_id: connId,
+      seq_id: seq++,
+      payload: payload
+    }));
+  }
+
+  function manejarMensaje(msg) {
+    // Vidu conversa con su propio modelo y no deja reemplazarlo, asi que aca
+    // no hay nada que pensar: lo que sabe Catalina viene de `avatar.persona`,
+    // que se arma en el servidor. Esto solo escucha los avisos de error.
+    if (msg && msg.payload && msg.payload.error) {
+      avisar(String(msg.payload.error));
+    }
+  }
+
+  function unirseRTC() {
+    var AliRtcEngine = window.AliRtcEngine;
+    if (!AliRtcEngine) return Promise.reject(new Error("No cargó el SDK de video."));
+
+    rtc = AliRtcEngine.getInstance();
+
+    rtc.on("videoSubscribeStateChanged", function (userId, viejo, nuevo) {
+      if (nuevo === "subscribed") {
+        $("reposo").style.display = "none";
+        $("video").style.display = "block";
+        rtc.setRemoteViewConfig($("video"), userId, 1);
+      }
+    });
+
+    return rtc.joinChannel(sesion.rtc.token, sesion.rtc.user_id)
+      .then(function () { return rtc.publishLocalAudioStream(true); })
+      .then(function () { enVivo(); });
+  }
+
+  // ---- En vivo: cronometro, costo, corte automatico ---------------------
+  function enVivo() {
+    t0 = Date.now();
+    $("btn").disabled = false;
+    $("btn").textContent = "Colgar";
+    $("btn").className = "colgar";
+    $("hud").style.display = "flex";
+    $("zonaDecir").style.display = "flex";
+
+    cronometro = setInterval(function () {
+      var s = Math.floor((Date.now() - t0) / 1000);
+      var quedan = sesion.tope_sesion_seg - s;
+      $("reloj").textContent = Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2);
+      $("costo").textContent = "USD " + (s * USD_SEG).toFixed(2).replace(".", ",");
+      $("reloj").className = quedan <= 30 ? "alerta" : "";
+      // El tope propio corta antes que el techo de 600 s de Vidu.
+      if (quedan <= 0) terminar("Se llegó al máximo de la sesión.");
+    }, 1000);
+  }
+
+  // Escribirle equivale a hablarle: `text_msg` entra como lo que dice el
+  // usuario, y Vidu responde con su propio modelo. Sirve igual para pedirle
+  // acciones ("levanta un brazo") que para conversar.
+  function decir() {
+    var txt = $("decir").value.trim();
+    if (!txt || !sesion) return;
+    $("decir").value = "";
+    enviarWS(99, { text_msg: {              // text_msg es el tipo 99
+      msg_id: "m-" + Date.now(),
+      content: txt,
+      timestamp: Date.now()
+    }});
+  }
+
+  // ---- Colgar y cerrar la contabilidad ---------------------------------
+  function terminar(motivo) {
+    if (colgando) return;
+    colgando = true;
+    clearInterval(cronometro);
+
+    var segundos = t0 ? Math.floor((Date.now() - t0) / 1000) : 0;
+    try { enviarWS(5, { call_hangup: { hangup_reason: "user_end" } }); } catch (_) {}
+    try { if (rtc) rtc.leaveChannel(); } catch (_) {}
+    try { if (ws) ws.close(); } catch (_) {}
+
+    if (sesion) {
+      // keepalive: que el cierre llegue aunque se cierre la pestana, si no el
+      // gasto de esta sesion no queda anotado en ningun lado.
+      fetch("/api/vidu/cerrar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ live_id: sesion.live_id, segundos: segundos }),
+        keepalive: true
+      }).catch(function () {});
+    }
+
+    $("video").style.display = "none";
+    $("reposo").style.display = "block";
+    $("hud").style.display = "none";
+    $("zonaDecir").style.display = "none";
+    $("btn").className = "";
+    $("btn").textContent = "Hablar con Catalina";
+    $("btn").disabled = false;
+    if (motivo) avisar(motivo, false);
+
+    sesion = null; ws = null; rtc = null; t0 = 0; colgando = false;
+  }
+
+  $("btn").onclick = function () { sesion ? terminar("") : abrir(); };
+  $("btnDecir").onclick = decir;
+  $("decir").addEventListener("keydown", function (e) { if (e.key === "Enter") decir(); });
+  window.addEventListener("pagehide", function () { if (sesion) terminar(""); });
+})();
+</script>
+
+</body>
+</html>

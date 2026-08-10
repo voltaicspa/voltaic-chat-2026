@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Configurar a Camila</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Camila Config">
+<meta name="theme-color" content="#0b0d14">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top) + 22px) 16px calc(env(safe-area-inset-bottom) + 90px);
+    background: radial-gradient(ellipse at top, #1a1d2e 0%, #0b0d14 60%);
+    color: #e8e9f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; }
+
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 6px; }
+  .dot {
+    width: 44px; height: 44px; flex: 0 0 44px;
+    display: grid; place-items: center; font-size: 21px; border-radius: 50%;
+    background: linear-gradient(145deg, #7b2ffc, #4c1d95);
+  }
+  h1 { font-size: 21px; font-weight: 600; letter-spacing: -.3px; }
+  .hint { font-size: 12.5px; color: #7b8199; margin-top: 2px; }
+
+  .card {
+    background: #12141f; border: 1px solid #242739; border-radius: 14px;
+    padding: 16px; margin-top: 14px;
+  }
+  label { display: block; font-size: 12px; text-transform: uppercase;
+          letter-spacing: .6px; color: #8b90a8; margin-bottom: 7px; font-weight: 600; }
+  .sub { font-size: 12px; color: #6c7288; margin-top: 6px; line-height: 1.5; }
+
+  select, input[type=text], textarea {
+    width: 100%; background: #0c0e17; color: #e8e9f0;
+    border: 1px solid #2b2f45; border-radius: 10px;
+    padding: 12px; font-size: 15px; font-family: inherit;
+    -webkit-appearance: none; appearance: none;
+  }
+  select { background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2 4l4 4 4-4' stroke='%238b90a8' stroke-width='1.6' fill='none'/></svg>");
+           background-repeat: no-repeat; background-position: right 13px center; padding-right: 34px; }
+  textarea { min-height: 190px; resize: vertical; line-height: 1.55; font-size: 14px; }
+  select:focus, input:focus, textarea:focus { outline: none; border-color: #7b2ffc; }
+
+  .slider { margin-top: 15px; }
+  .slider .top { display: flex; justify-content: space-between; align-items: baseline; }
+  .slider .val { font-size: 13px; color: #a78bfa; font-variant-numeric: tabular-nums; font-weight: 600; }
+  input[type=range] { width: 100%; margin-top: 8px; accent-color: #7b2ffc; }
+
+  .check { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+  .check input { width: 19px; height: 19px; accent-color: #7b2ffc; }
+  .check label { margin: 0; text-transform: none; letter-spacing: 0; font-size: 14px; color: #e8e9f0; }
+
+  .barra {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px);
+    background: rgba(11,13,20,.94); backdrop-filter: blur(12px);
+    border-top: 1px solid #242739;
+  }
+  .barra .inner { max-width: 560px; margin: 0 auto; display: flex; gap: 10px; }
+  button {
+    flex: 1; padding: 14px; border: none; border-radius: 11px;
+    font-size: 15px; font-weight: 600; font-family: inherit; cursor: pointer;
+    background: #7b2ffc; color: #fff;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.sec { flex: 0 0 auto; padding: 14px 18px; background: #232637; color: #c9cde0; }
+
+  #estado {
+    margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+    font-size: 13.5px; line-height: 1.55; display: none;
+  }
+  #estado.ok   { display:block; background: rgba(34,197,94,.1);  border: 1px solid rgba(34,197,94,.32);  color: #86efac; }
+  #estado.err  { display:block; background: rgba(220,38,38,.1);  border: 1px solid rgba(220,38,38,.32);  color: #fca5a5; }
+  #estado.info { display:block; background: rgba(123,47,252,.1); border: 1px solid rgba(123,47,252,.32); color: #c4b5fd; }
+  #estado code { background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+
+  a.volver { color: #a78bfa; text-decoration: none; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="dot">⚙️</div>
+    <div>
+      <h1>Configurar a Camila</h1>
+      <div class="hint">Su voz, su saludo y su personalidad</div>
+    </div>
+  </header>
+
+  <div id="estado"></div>
+
+  <div class="card">
+    <label for="voz">Voz</label>
+    <select id="voz"><option>Cargando…</option></select>
+    <div class="sub">Las voces salen de tu cuenta de ElevenLabs. Si clonas tu voz, aparece acá.</div>
+  </div>
+
+  <div class="card">
+    <label for="saludo">Saludo inicial</label>
+    <input type="text" id="saludo" placeholder="Ej: Hola Cristian, soy Camila. ¿En qué trabajamos hoy?">
+    <div class="sub">Lo primero que dice al contestar la llamada.</div>
+  </div>
+
+  <div class="card">
+    <label for="prompt">Personalidad e instrucciones</label>
+    <textarea id="prompt" placeholder="Cargando…"></textarea>
+    <div class="sub">Acá defines quién es y cómo se comporta. Es su carácter completo.</div>
+  </div>
+
+  <div class="card">
+    <label>Modulación de la voz</label>
+
+    <div class="slider">
+      <div class="top"><span class="sub" style="margin:0">Estabilidad</span><span class="val" id="vEst">—</span></div>
+      <input type="range" id="est" min="0" max="1" step="0.05">
+      <div class="sub">Baja = más expresiva y variable. Alta = más pareja y monótona.</div>
+    </div>
+
+    <div class="slider">
+      <div class="top"><span class="sub" style="margin:0">Similitud</span><span class="val" id="vSim">—</span></div>
+      <input type="range" id="sim" min="0" max="1" step="0.05">
+      <div class="sub">Qué tanto se pega al timbre original de la voz.</div>
+    </div>
+
+    <div class="slider">
+      <div class="top"><span class="sub" style="margin:0">Estilo</span><span class="val" id="vEsti">—</span></div>
+      <input type="range" id="esti" min="0" max="1" step="0.05">
+      <div class="sub">Exagera la entonación. Sube la latencia si lo subes mucho.</div>
+    </div>
+
+    <div class="check">
+      <input type="checkbox" id="boost">
+      <label for="boost">Realce de voz (speaker boost)</label>
+    </div>
+  </div>
+
+  <div style="margin-top:18px;text-align:center">
+    <a class="volver" href="/camila">← Volver a hablar con Camila</a>
+  </div>
+</div>
+
+<div class="barra">
+  <div class="inner">
+    <button class="sec" onclick="cargar()" id="btnRecargar">Recargar</button>
+    <button onclick="guardar()" id="btnGuardar">Guardar cambios</button>
+  </div>
+</div>
+
+<script>
+const AGENTE = 'agent_5801kyx7byh9fn0t0g3drf88z5m2';   // Camila
+const $ = id => document.getElementById(id);
+
+/* El token de administrador se pide una vez y vive solo en la pestaña.
+   Nunca se escribe en el codigo ni se manda en la URL. */
+function token() {
+  let t = sessionStorage.getItem('voltaic_token');
+  if (!t) {
+    t = prompt('Token de administrador (ADMIN_API_TOKEN):');
+    if (t) sessionStorage.setItem('voltaic_token', t.trim());
+  }
+  return (t || '').trim();
+}
+function cabeceras(extra) {
+  return Object.assign({ 'X-Voltaic-Token': token() }, extra || {});
+}
+
+function estado(texto, tipo) {
+  const e = $('estado');
+  e.className = tipo || 'info';
+  e.innerHTML = texto;
+}
+
+/* Traduce los errores a algo accionable, en vez de dejar "Cargando..." pegado */
+function explicar(codigo) {
+  if (codigo === 503) {
+    return 'El panel está deshabilitado en el servidor: falta configurar ' +
+           '<code>ADMIN_API_TOKEN</code> en Vercel &rsaquo; Settings &rsaquo; ' +
+           'Environment Variables (entorno Production). Después hay que ' +
+           'volver a desplegar para que tome efecto.';
+  }
+  if (codigo === 401 || codigo === 403) {
+    sessionStorage.removeItem('voltaic_token');
+    return 'Token incorrecto. Toca <b>Recargar</b> para escribirlo de nuevo.';
+  }
+  return 'Error del servidor (HTTP ' + codigo + ').';
+}
+
+function fijarRango(idRange, idVal, valor) {
+  const v = (valor === undefined || valor === null) ? 0.5 : Number(valor);
+  $(idRange).value = v;
+  $(idVal).innerText = v.toFixed(2);
+}
+
+async function cargar() {
+  estado('Cargando la configuración de Camila…', 'info');
+  $('btnGuardar').disabled = true;
+
+  try {
+    const [rVoces, rAgente] = await Promise.all([
+      fetch('/api/voices', { headers: cabeceras() }),
+      fetch('/api/copilots/' + AGENTE, { headers: cabeceras() })
+    ]);
+
+    if (!rAgente.ok) { estado(explicar(rAgente.status), 'err'); return; }
+
+    // Voces
+    if (rVoces.ok) {
+      const dv = await rVoces.json();
+      if (dv.success && dv.voices) {
+        $('voz').innerHTML = '';
+        dv.voices.forEach(v => {
+          const o = document.createElement('option');
+          o.value = v.voice_id; o.innerText = v.name;
+          $('voz').appendChild(o);
+        });
+      }
+    }
+
+    // Datos del agente
+    const d = (await rAgente.json()).data || {};
+    $('prompt').value = d.prompt || '';
+    $('saludo').value = d.first_message || '';
+    if (d.voice_id) $('voz').value = d.voice_id;
+    fijarRango('est',  'vEst',  d.stability);
+    fijarRango('sim',  'vSim',  d.similarity_boost);
+    fijarRango('esti', 'vEsti', d.style);
+    $('boost').checked = !!d.use_speaker_boost;
+
+    $('btnGuardar').disabled = false;
+    estado('Listo. Configuración cargada desde ElevenLabs.', 'ok');
+  } catch (e) {
+    estado('No se pudo conectar con el servidor: ' + e.message, 'err');
+  }
+}
+
+async function guardar() {
+  const b = $('btnGuardar');
+  b.disabled = true;
+  estado('Guardando en ElevenLabs…', 'info');
+
+  try {
+    const r = await fetch('/api/copilots/' + AGENTE, {
+      method: 'PATCH',
+      headers: cabeceras({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({
+        prompt: $('prompt').value,
+        first_message: $('saludo').value,
+        voice_id: $('voz').value,
+        stability: $('est').value,
+        similarity_boost: $('sim').value,
+        style: $('esti').value,
+        use_speaker_boost: $('boost').checked
+      })
+    });
+
+    if (!r.ok) { estado(explicar(r.status), 'err'); b.disabled = false; return; }
+
+    const d = await r.json();
+    if (d.success) {
+      estado('Guardado. Camila ya responde con esta configuración — ' +
+             'prueba llamándola.', 'ok');
+    } else {
+      estado('No se pudo guardar: ' + (d.error || 'error desconocido'), 'err');
+    }
+  } catch (e) {
+    estado('Error de conexión: ' + e.message, 'err');
+  }
+  b.disabled = false;
+}
+
+['est','sim','esti'].forEach((id, i) => {
+  const destino = ['vEst','vSim','vEsti'][i];
+  $(id).addEventListener('input', e => $(destino).innerText = Number(e.target.value).toFixed(2));
+});
+
+cargar();
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Paneles Voltaic</title>
+
+<link rel="manifest" href="/paneles/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Paneles">
+<meta name="theme-color" content="#0b0d14">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎛️</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%230b0d14'/><text x='90' y='124' font-size='98' text-anchor='middle'>🎛️</text></svg>">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    min-height: 100vh; min-height: 100dvh;
+    padding: calc(env(safe-area-inset-top) + 20px) 16px calc(env(safe-area-inset-bottom) + 40px);
+    background: radial-gradient(ellipse at top, #1a1d2e 0%, #0b0d14 55%);
+    color: #e8e9f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .caja { max-width: 640px; margin: 0 auto; }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  h1 { font-size: 23px; font-weight: 600; letter-spacing: -.3px; }
+  #resumen { font-size: 12.5px; color: #6b6f85; font-variant-numeric: tabular-nums; }
+
+  h2 {
+    font-size: 11.5px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 1.3px; color: #6b6f85; margin: 26px 0 11px;
+  }
+
+  .grilla { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px; }
+  @media (max-width: 380px) { .grilla { grid-template-columns: 1fr; } }
+
+  a.panel {
+    display: flex; align-items: center; gap: 13px;
+    padding: 15px 14px; border-radius: 15px; text-decoration: none;
+    background: #14161f; border: 1px solid #23263a; color: inherit;
+    transition: transform .1s, border-color .15s;
+  }
+  a.panel:active { transform: scale(.975); border-color: #7b2ffc; }
+
+  .icono { font-size: 27px; line-height: 1; flex-shrink: 0; }
+  .texto { min-width: 0; flex: 1; }
+  .nombre { font-size: 15px; font-weight: 600; letter-spacing: -.2px; }
+  .detalle {
+    font-size: 11.5px; color: #7f8399; margin-top: 3px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  /* Semaforo: gris mientras no sabemos, para no mentir antes de comprobar */
+  .luz {
+    width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0;
+    background: #3a3d52; transition: background .25s;
+  }
+  .luz.viva { background: #22c55e; box-shadow: 0 0 9px rgba(34,197,94,.65); }
+  .luz.caida { background: #ef4444; box-shadow: 0 0 9px rgba(239,68,68,.6); }
+  a.panel.caida { opacity: .5; }
+
+  .nota {
+    margin-top: 30px; padding: 14px 16px; border-radius: 12px;
+    font-size: 12.5px; line-height: 1.6; color: #93c5fd;
+    background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.22);
+  }
+  .nota b { color: #bfdbfe; }
+</style>
+</head>
+<body>
+<div class="caja">
+
+  <header>
+    <h1>🎛️ Paneles</h1>
+    <span id="resumen">comprobando…</span>
+  </header>
+
+  {% for grupo, lista in grupos.items() %}
+    <h2>{{ grupo }}</h2>
+    <div class="grilla">
+      {% for p in lista %}
+        <a class="panel" href="{{ p.url }}" data-puerto="{{ p.puerto }}">
+          <span class="icono">{{ p.icono }}</span>
+          <span class="texto">
+            <span class="nombre">{{ p.nombre }}</span>
+            <span class="detalle">{{ p.detalle }} · {{ p.puerto }}</span>
+          </span>
+          <span class="luz"></span>
+        </a>
+      {% endfor %}
+    </div>
+  {% endfor %}
+
+  <div class="nota">
+    Los paneles se abren por <b>Tailscale</b> ({{ host }}), así que la VPN tiene
+    que estar activa en este teléfono. Es a propósito: la mayoría no pide clave,
+    y sacarlos a internet para ganar comodidad sería dejar la casa abierta.
+  </div>
+
+</div>
+
+<script>
+  // El estado se pide al servidor, no desde el telefono: el navegador no puede
+  // comprobar puertos ajenos, y ademas asi se consultan los trece en paralelo.
+  function actualizar() {
+    fetch("/api/paneles/estado")
+      .then(function (r) { return r.json(); })
+      .then(function (estado) {
+        var vivos = 0, total = 0;
+        document.querySelectorAll("a.panel").forEach(function (a) {
+          var vivo = estado[a.dataset.puerto];
+          if (vivo === undefined) return;
+          total++;
+          if (vivo) vivos++;
+          a.querySelector(".luz").className = "luz " + (vivo ? "viva" : "caida");
+          a.classList.toggle("caida", !vivo);
+        });
+        document.getElementById("resumen").textContent =
+          vivos + " de " + total + " arriba";
+        document.getElementById("resumen").style.color =
+          vivos === total ? "#4ade80" : "#fca5a5";
+      })
+      .catch(function () {
+        document.getElementById("resumen").textContent = "no se pudo comprobar";
+      });
+  }
+
+  actualizar();
+  // Al volver a la pantalla desde otro panel, refrescamos.
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) actualizar();
+  });
+</script>
+
+</body>
+</html>

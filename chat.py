@@ -5,8 +5,7 @@ import os
 
 app = Flask(__name__)
 
-API_KEY = "sk-9c0a9d3b952240aa8662b98133773d37"
-client = OpenAI(api_key=API_KEY, base_url="https://api.deepseek.com/v1")
+# La API key la envía cada usuario desde el frontend (no se guarda en el servidor)
 
 CONFIG_FILE = "config.json"
 messages = []
@@ -41,6 +40,11 @@ def index():
 def dashboard():
     return render_template("dashboard.html")
 
+@app.route("/camila")
+def camila():
+    """Pagina limpia con SOLO el chat de voz de Camila (para el iPhone)."""
+    return render_template("camila.html")
+
 @app.route("/test")
 def test():
     return "✅ Servidor funcionando!"
@@ -55,14 +59,18 @@ def update_config():
     save_config(new_config)
     return jsonify({"status": "success"})
 
-@app.route("/chat", methods=["POST"])
+@app.route("/api/chat", methods=["POST"])
 def chat():
     try:
         data = request.json
         mensaje = data.get("message", "")
-        config = load_config()
+        api_key = data.get("api_key", "")
         if not mensaje:
             return jsonify({"error": "Mensaje vacío"})
+        if not api_key or not api_key.startswith("sk-"):
+            return jsonify({"error": "API Key de DeepSeek inválida. Consigue una en platform.deepseek.com"})
+        client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
+        config = load_config()
         mensajes_para_enviar = []
         mensajes_para_enviar.append({
             "role": "system",

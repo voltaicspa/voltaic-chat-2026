@@ -1,0 +1,14 @@
+.vercel
+.env*
+
+# Cache de Python
+__pycache__/
+*.pyc
+
+# Build de Flutter del tracker: son artefactos, no fuente.
+# Incluye un APK de varios MB que no tiene por que vivir en el repo.
+tracker/
+
+# Datos locales
+*.db
+users.json

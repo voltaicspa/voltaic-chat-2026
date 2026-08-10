@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Datos de Catalina — VoltaicTech</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    min-height: 100vh; padding: 26px 18px 60px;
+    background: radial-gradient(ellipse at top, #1a1d2e 0%, #0b0d14 60%);
+    color: #e8e9f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .caja { max-width: 780px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 600; letter-spacing: -.3px; }
+  .sub { font-size: 14px; color: #9297ad; margin-top: 8px; line-height: 1.6; }
+
+  .aviso {
+    margin: 20px 0; padding: 14px 17px; border-radius: 12px; font-size: 13.5px;
+    line-height: 1.6; color: #fcd34d;
+    background: rgba(245,158,11,.09); border: 1px solid rgba(245,158,11,.28);
+  }
+  .aviso b { color: #fde68a; }
+
+  textarea {
+    width: 100%; min-height: 340px; margin-top: 6px; padding: 15px;
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 14px; line-height: 1.65; resize: vertical;
+    background: #12141e; color: #e8e9f0;
+    border: 1px solid #26293b; border-radius: 13px;
+  }
+  textarea:focus { outline: none; border-color: #7b2ffc; }
+
+  .pie { display: flex; align-items: center; gap: 13px; margin-top: 14px; flex-wrap: wrap; }
+  button {
+    padding: 12px 24px; font-size: 15px; font-weight: 600; color: #fff;
+    border: none; border-radius: 12px; cursor: pointer;
+    background: linear-gradient(145deg, #7b2ffc, #4c1d95);
+  }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  #contador { font-size: 12.5px; color: #5a5d6e; font-variant-numeric: tabular-nums; }
+  #estado { font-size: 13.5px; }
+  #estado.ok { color: #4ade80; }
+  #estado.mal { color: #fca5a5; }
+
+  details { margin-top: 24px; font-size: 13.5px; color: #9297ad; }
+  summary { cursor: pointer; color: #b6bacb; padding: 6px 0; }
+  pre {
+    margin-top: 10px; padding: 14px; border-radius: 11px;
+    background: #12141e; border: 1px solid #23263a;
+    color: #9297ad; font-size: 12.5px; line-height: 1.65;
+    white-space: pre-wrap;
+  }
+</style>
+</head>
+<body>
+<div class="caja">
+
+  <h1>📋 Datos de Catalina</h1>
+  <p class="sub">
+    Lo que escribas acá lo va a saber Catalina cuando alguien le hable. Sirve
+    para precios, promociones, novedades — cualquier cosa que cambie seguido y
+    que no valga la pena tocar en el código.
+  </p>
+
+  <div class="aviso">
+    <b>Solo datos que hayas verificado.</b> Catalina tiene prohibido inventar
+    cifras, pero lo que pongas acá lo va a dar por cierto y se lo va a decir a
+    tus clientes. Si te equivocas en un precio o un plazo, lo repite tal cual.
+  </div>
+
+  <textarea id="texto" placeholder="Por ejemplo:
+
+El Radar cuesta [monto] al mes por empresa, con [n] usuarios incluidos.
+El Panel Analista es un add-on aparte.
+En agosto hay [descuento] para quien contrate el primer mes.
+El soporte responde de lunes a viernes, de [hora] a [hora]."></textarea>
+
+  <div class="pie">
+    <button id="guardar">Guardar</button>
+    <span id="contador">0 caracteres</span>
+    <span id="estado"></span>
+  </div>
+
+  <details>
+    <summary>Cómo escribirlos para que los use bien</summary>
+    <pre>Frases sueltas y directas, una por línea. No hace falta formato.
+
+SÍ:
+  El plan básico son 49.000 pesos mensuales más IVA.
+  La instalación es gratis si contratan por 12 meses.
+  En septiembre no hay atención la semana del 18.
+
+NO:
+  Precios competitivos          (no es un dato, no le sirve)
+  Consultar valores             (para eso ya deriva a ti sola)
+  ## Precios **destacados**     (el markdown se escucha horrible)
+
+Si un dato deja de valer, bórralo. Lo que esté acá lo va a
+seguir diciendo hasta que lo saques.</pre>
+  </details>
+
+</div>
+
+<script>
+  var $ = function (id) { return document.getElementById(id); };
+
+  function contar() {
+    var n = $("texto").value.length;
+    $("contador").textContent = n.toLocaleString("es-CL") + " caracteres";
+    $("contador").style.color = n > 20000 ? "#fca5a5" : "#5a5d6e";
+  }
+
+  function avisar(msg, ok) {
+    $("estado").textContent = msg;
+    $("estado").className = ok ? "ok" : "mal";
+    if (ok) setTimeout(function () { $("estado").textContent = ""; }, 4000);
+  }
+
+  fetch("/api/catalina/datos")
+    .then(function (r) { return r.json(); })
+    .then(function (j) { $("texto").value = j.texto || ""; contar(); })
+    .catch(function () { avisar("No se pudieron cargar los datos.", false); });
+
+  $("texto").addEventListener("input", contar);
+
+  $("guardar").onclick = function () {
+    $("guardar").disabled = true;
+    avisar("Guardando…", true);
+    fetch("/api/catalina/datos", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ texto: $("texto").value })
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (j) {
+      if (!j.success) throw new Error(j.error);
+      avisar("Guardado. Catalina ya lo sabe.", true);
+    })
+    .catch(function (e) { avisar(e.message, false); })
+    .then(function () { $("guardar").disabled = false; });
+  };
+</script>
+
+</body>
+</html>

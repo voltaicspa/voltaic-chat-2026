@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Camila — Asistente de Cristian</title>
+
+<!-- Permite agregarla al inicio del iPhone como si fuera una app -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Camila">
+<meta name="theme-color" content="#0b0d14">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎙️</text></svg>">
+
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    min-height: 100vh;
+    min-height: 100dvh;               /* iOS: descuenta la barra de Safari */
+    padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 28px;
+    background: radial-gradient(ellipse at top, #1a1d2e 0%, #0b0d14 60%);
+    color: #e8e9f0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    text-align: center;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .avatar {
+    width: 96px; height: 96px;
+    display: grid; place-items: center;
+    font-size: 44px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #7b2ffc, #4c1d95);
+    box-shadow: 0 0 46px rgba(123, 47, 252, .38);
+    animation: respirar 3.6s ease-in-out infinite;
+  }
+  @keyframes respirar {
+    0%, 100% { transform: scale(1);    box-shadow: 0 0 46px rgba(123, 47, 252, .38); }
+    50%      { transform: scale(1.04); box-shadow: 0 0 62px rgba(123, 47, 252, .52); }
+  }
+
+  h1 { font-size: 27px; font-weight: 600; letter-spacing: -.4px; }
+
+  .sub {
+    font-size: 14px;
+    color: #9297ad;
+    max-width: 300px;
+    line-height: 1.55;
+  }
+
+  /* El widget de ElevenLabs se dibuja solo; le damos aire y ancho util */
+  elevenlabs-convai { width: 100%; max-width: 420px; }
+
+  .pie {
+    position: fixed;
+    bottom: calc(env(safe-area-inset-bottom) + 14px);
+    font-size: 11px;
+    color: #4e5468;
+    letter-spacing: .4px;
+  }
+
+  /* Aviso solo si el navegador no soporta el widget */
+  #aviso {
+    display: none;
+    font-size: 13px;
+    color: #fca5a5;
+    background: rgba(220, 38, 38, .1);
+    border: 1px solid rgba(220, 38, 38, .3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    max-width: 340px;
+  }
+</style>
+</head>
+<body>
+
+  <div class="avatar">🎙️</div>
+
+  <div>
+    <h1>Camila</h1>
+    <p class="sub" style="margin-top:8px">
+      Tu asistente personal. Toca para hablar y responde con voz.
+    </p>
+  </div>
+
+  <!--
+    Solo se necesita el agent-id, que es un identificador PUBLICO.
+    La API key de ElevenLabs NUNCA va aca: seria visible en el codigo fuente.
+    La personalidad y la voz de Camila se configuran en la cuenta de ElevenLabs.
+  -->
+  <elevenlabs-convai agent-id="agent_5801kyx7byh9fn0t0g3drf88z5m2"></elevenlabs-convai>
+  <script src="https://elevenlabs.io/convai-widget/index.js" async type="text/javascript"></script>
+
+  <div id="aviso">
+    No se pudo cargar el chat de voz. Revisa tu conexion e intenta de nuevo.
+  </div>
+
+  <div class="pie">VoltaicTech SpA</div>
+
+<script>
+  // Si a los 8 segundos el widget no se dibujo, avisamos en vez de dejar
+  // la pantalla muda sin explicacion.
+  setTimeout(function () {
+    var el = document.querySelector('elevenlabs-convai');
+    if (!el || !el.shadowRoot) {
+      document.getElementById('aviso').style.display = 'block';
+    }
+  }, 8000);
+</script>
+
+</body>
+</html>
