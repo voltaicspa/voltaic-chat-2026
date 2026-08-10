@@ -12,3 +12,9 @@ tracker/
 # Datos locales
 *.db
 users.json
+
+.vercel
+.env*
+
+# Enlaces viejos de Vercel guardados al re-vincular
+.vercel_obsoleto_*/

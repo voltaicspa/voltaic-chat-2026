@@ -1,4 +1,14 @@
 import os
+import sys
+
+# En Vercel el directorio del entrypoint NO queda en sys.path, asi que los
+# `import simli_live` / `vidu_live` / `paneles` fallan con "No module named".
+# En local no se nota porque se ejecuta parado dentro de api/. Sin esto, la
+# pagina /catalina/cara carga pero sus rutas de API devuelven 404.
+_AQUI = os.path.dirname(os.path.abspath(__file__))
+if _AQUI not in sys.path:
+    sys.path.insert(0, _AQUI)
+
 import requests
 from flask import Flask, render_template, render_template_string, request, jsonify
 
