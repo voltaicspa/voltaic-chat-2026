@@ -1,20 +1,19 @@
-.vercel
-.env*
 
-# Cache de Python
-__pycache__/
-*.pyc
 
 # Build de Flutter del tracker: son artefactos, no fuente.
-# Incluye un APK de varios MB que no tiene por que vivir en el repo.
-tracker/
-
+# Cache de Python
 # Datos locales
-*.db
-users.json
-
-.vercel
-.env*
-
 # Enlaces viejos de Vercel guardados al re-vincular
+# Incluye un APK de varios MB que no tiene por que vivir en el repo.
+*.db
+*.pyc
+.env*
+.env*
+.vercel
+.vercel
 .vercel_obsoleto_*/
+__pycache__/
+tracker/
+users.json
+venv/
+voltaic-chat-2026/
